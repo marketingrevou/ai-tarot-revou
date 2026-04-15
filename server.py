@@ -39,19 +39,33 @@ def reading():
 
     card_lines = "\n".join(f"- {c['position']}: {c['name']}" for c in cards)
 
-    prompt = f"""Kamu adalah pembaca tarot AI yang bijak dan berwibawa. Penanya bekerja sebagai: {profession}.
+    c0, c1, c2 = cards[0], cards[1], cards[2]
+
+    prompt = f"""Kamu adalah pembaca tarot AI yang bijak dan personal. Penanya adalah seorang {profession}.
 
 Kartu yang terpilih:
 {card_lines}
 
-Tulis TEPAT 3 paragraf dalam bahasa Indonesia yang hangat, mudah dipahami, sopan, dan profesional. Setiap paragraf membahas satu kartu sesuai urutannya (masa lalu, masa kini, masa depan). Pisahkan tiap paragraf dengan satu baris kosong. JANGAN tulis header, judul, nomor, bullet point, atau tanda markdown apapun. Langsung mulai dengan isi paragraf pertama."""
+Tulis 5 blok teks dalam bahasa Indonesia yang hangat, mendalam, dan spesifik untuk bidang {profession}. Pisahkan tiap blok dengan satu baris kosong.
+
+Blok 1 (masa lalu, kartu {c0['name']}): Tulis 2-3 kalimat bacaan yang relevan dan personal untuk seorang {profession}. Langsung di baris berikutnya (tanpa baris kosong): Ingat: [satu kalimat pesan atau pelajaran terpenting dari kartu ini]
+
+Blok 2 (masa kini, kartu {c1['name']}): Tulis 2-3 kalimat bacaan yang relevan dan insightful untuk seorang {profession}. Langsung di baris berikutnya: Ingat: [satu kalimat saran konkret yang bisa langsung diterapkan]
+
+Blok 3 (masa depan, kartu {c2['name']}): Tulis 2-3 kalimat bacaan yang inspiratif dan actionable untuk seorang {profession}. Langsung di baris berikutnya: Ingat: [satu kalimat motivasi atau ajakan bertindak yang kuat]
+
+Blok 4 (sintesis): 2 kalimat yang merangkum bagaimana ketiga kartu saling terhubung sebagai satu perjalanan karir yang bermakna bagi seorang {profession}.
+
+Blok 5 (aksi nyata): Tulis TEPAT 3 langkah konkret dan spesifik yang bisa dilakukan minggu ini oleh seorang {profession}, berdasarkan pesan ketiga kartu. Satu kalimat per langkah, pisahkan tiap langkah dengan satu baris (bukan baris kosong). Langkah harus praktis, spesifik, dan langsung bisa dilakukan.
+
+PENTING: Jangan tulis label "Blok", header, judul, nomor, atau markdown apapun. Langsung mulai teks blok pertama."""
 
     client = anthropic.Anthropic(api_key=api_key)
 
     def generate():
         with client.messages.stream(
             model="claude-haiku-4-5-20251001",
-            max_tokens=350,
+            max_tokens=1200,
             messages=[{"role": "user", "content": prompt}],
         ) as stream:
             for text in stream.text_stream:

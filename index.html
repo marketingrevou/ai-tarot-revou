@@ -223,9 +223,14 @@
         class="tarot-input"
         placeholder="Email kamu"
         type="email"
+      />
+      <input id="major-input"
+        class="tarot-input"
+        placeholder="Jurusan / bidang kerjamu (mis. UI/UX, Data Science, Marketing)"
+        type="text"
         onkeydown="if(event.key==='Enter') goToSelection()"
       />
-      <p id="input-error" class="text-xs mt-1 ml-1 hidden" style="color:#e57373">Isi nama dan email dulu ya! 😅</p>
+      <p id="input-error" class="text-xs mt-1 ml-1 hidden" style="color:#e57373">Isi nama, email, dan bidang studi/kerja kamu ya! 😅</p>
       <button onclick="goToSelection()"
         class="w-full h-14 font-bold text-lg rounded-xl flex items-center justify-center gap-2 transition-all cinzel"
         style="background:#D4A847;color:#080810"
@@ -321,7 +326,7 @@
 
     <!-- Title -->
     <div class="text-center">
-      <h3 class="cinzel text-3xl font-bold" style="color:#D4A847">Ramalanmu 🔮</h3>
+      <h3 id="reading-title" class="cinzel text-3xl font-bold" style="color:#D4A847">Ramalanmu 🔮</h3>
       <p class="text-xs mt-1 uppercase tracking-widest font-semibold" style="color:rgba(240,233,214,0.45)">Bacaan Tiga Kartu</p>
     </div>
 
@@ -381,6 +386,7 @@ const CARDS = [
 // ── STATE ───────────────────────────────────────────────────────────────────
 const state = { name:"", email:"", profession:"", deck:[], selected:[] };
 
+
 // ── HELPERS ─────────────────────────────────────────────────────────────────
 function shuffle(arr) {
   const a = [...arr];
@@ -401,14 +407,16 @@ function goTo(n) {
 function goToSelection() {
   const nameInput  = document.getElementById('name-input');
   const emailInput = document.getElementById('email-input');
+  const majorInput = document.getElementById('major-input');
   const err        = document.getElementById('input-error');
-  state.name  = nameInput.value.trim();
-  state.email = emailInput.value.trim();
-  state.profession = state.name;
-  if (!state.name || !state.email) {
+  state.name       = nameInput.value.trim();
+  state.email      = emailInput.value.trim();
+  state.profession = majorInput.value.trim();
+  if (!state.name || !state.email || !state.profession) {
     err.classList.remove('hidden');
     if (!state.name) nameInput.focus();
-    else emailInput.focus();
+    else if (!state.email) emailInput.focus();
+    else majorInput.focus();
     return;
   }
   err.classList.add('hidden');
@@ -427,6 +435,8 @@ function goToReveal() {
 }
 
 function goToReading() {
+  const title = document.getElementById('reading-title');
+  if (title && state.name) title.textContent = `Ramalanmu, ${state.name} 🔮`;
   goTo(4);
   fetchReading();
 }
@@ -725,31 +735,117 @@ function appendStreamChunk(text) {
 
   content.innerHTML = '';
   parts.forEach((part, i) => {
-    if (!part.trim() || i >= 3) return;
-    const card = state.selected[i];
-    const pos  = _positions[i];
-    const icon = _posIcons[i];
+    if (!part.trim() || i >= 5) return;
 
-    const div = document.createElement('div');
-    div.className = 'fade-in rounded-2xl overflow-hidden';
-    div.style.cssText = `border:2px solid rgba(212,168,71,0.5);box-shadow:4px 4px 0 rgba(212,168,71,0.2);animation-delay:${i*0.1}s`;
-    div.innerHTML = `
-      <div class="flex items-center gap-3 px-4 py-3" style="background:${card.color}">
-        <div class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(0,0,0,0.12)">
-          <span class="ms ms-fill text-slate-900" style="font-size:1.4rem">${card.icon}</span>
-        </div>
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-1 mb-0.5">
-            <span class="ms text-slate-700" style="font-size:0.9rem">${icon}</span>
-            <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-700 cinzel">${pos}</p>
+    if (i < 3) {
+      // ── Card reading panel ───────────────────────────────────────
+      const card = state.selected[i];
+      const pos  = _positions[i];
+      const icon = _posIcons[i];
+
+      // Split "Ingat: ..." key message from main reading text
+      const ingatMatch = part.match(/\nIngat:\s*/i);
+      let mainText = part.trim();
+      let keyMsg   = null;
+      if (ingatMatch) {
+        const idx = part.indexOf(ingatMatch[0]);
+        mainText = part.substring(0, idx).trim();
+        keyMsg   = part.substring(idx + ingatMatch[0].length).trim();
+      }
+
+      const div = document.createElement('div');
+      div.className = 'fade-in rounded-2xl overflow-hidden';
+      div.style.cssText = `border:2px solid rgba(212,168,71,0.5);box-shadow:4px 4px 0 rgba(212,168,71,0.2);animation-delay:${i*0.1}s`;
+      div.innerHTML = `
+        <div class="flex items-center gap-3 px-4 py-3" style="background:${card.color}">
+          <div class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(0,0,0,0.12)">
+            <span class="ms ms-fill text-slate-900" style="font-size:1.4rem">${card.icon}</span>
           </div>
-          <p class="text-sm font-black text-slate-900 leading-tight cinzel">${card.name}</p>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1 mb-0.5">
+              <span class="ms text-slate-700" style="font-size:0.9rem">${icon}</span>
+              <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-700 cinzel">${pos}</p>
+            </div>
+            <p class="text-sm font-black text-slate-900 leading-tight cinzel">${card.name}</p>
+          </div>
         </div>
-      </div>
-      <div class="p-4" style="background:#0d0d1a">
-        <p class="text-sm leading-relaxed text-left" style="color:#F0E9D6">${part.trim()}</p>
-      </div>`;
-    content.appendChild(div);
+        <div class="px-4 pt-4 ${keyMsg ? 'pb-3' : 'pb-4'}" style="background:#0d0d1a">
+          <p class="text-sm leading-relaxed" style="color:#F0E9D6">${mainText}</p>
+        </div>
+        ${keyMsg ? `
+        <div class="px-4 pb-4" style="background:#0d0d1a">
+          <div class="rounded-xl p-3" style="background:rgba(212,168,71,0.07);border-left:3px solid rgba(212,168,71,0.65)">
+            <div class="flex items-start gap-2">
+              <span class="ms flex-shrink-0" style="color:#D4A847;font-size:1rem;margin-top:1px">auto_awesome</span>
+              <div>
+                <p class="text-[9px] font-bold uppercase tracking-[0.15em] cinzel mb-1" style="color:#D4A847">Pesan Kunci</p>
+                <p class="text-xs leading-relaxed italic" style="color:rgba(240,233,214,0.85)">${keyMsg}</p>
+              </div>
+            </div>
+          </div>
+        </div>` : ''}`;
+      content.appendChild(div);
+
+    } else if (i === 3) {
+      // ── Synthesis panel ──────────────────────────────────────────
+      const sep = document.createElement('div');
+      sep.className = 'flex items-center gap-3';
+      sep.innerHTML = `
+        <div class="flex-1 h-px" style="background:linear-gradient(to right,transparent,rgba(212,168,71,0.3))"></div>
+        <span class="ms" style="color:rgba(212,168,71,0.5);font-size:0.9rem">flare</span>
+        <div class="flex-1 h-px" style="background:linear-gradient(to left,transparent,rgba(212,168,71,0.3))"></div>`;
+      content.appendChild(sep);
+
+      const div = document.createElement('div');
+      div.className = 'fade-in rounded-2xl overflow-hidden';
+      div.style.cssText = `border:2px solid rgba(212,168,71,0.65);box-shadow:0 0 20px rgba(212,168,71,0.1),4px 4px 0 rgba(212,168,71,0.2);animation-delay:0.3s`;
+      div.innerHTML = `
+        <div class="px-4 py-3 flex items-center gap-3" style="background:linear-gradient(135deg,rgba(212,168,71,0.18) 0%,rgba(212,168,71,0.07) 100%);border-bottom:1px solid rgba(212,168,71,0.25)">
+          <span class="ms ms-fill" style="color:#D4A847;font-size:1.5rem">stars</span>
+          <div>
+            <p class="text-[9px] font-bold uppercase tracking-[0.2em] cinzel" style="color:rgba(212,168,71,0.65)">Pesan Keseluruhan</p>
+            <p class="text-sm font-black cinzel" style="color:#D4A847">Sintesis Bacaanmu</p>
+          </div>
+        </div>
+        <div class="p-5" style="background:#0d0d1a">
+          <p class="text-sm leading-relaxed text-center italic" style="color:rgba(240,233,214,0.9)">"${part.trim()}"</p>
+        </div>`;
+      content.appendChild(div);
+
+    } else if (i === 4) {
+      // ── Aksi Nyata panel ─────────────────────────────────────────
+      const actions = part.trim().split('\n').map(s => s.trim()).filter(s => s.length > 0);
+
+      const sep = document.createElement('div');
+      sep.className = 'flex items-center gap-3';
+      sep.innerHTML = `
+        <div class="flex-1 h-px" style="background:linear-gradient(to right,transparent,rgba(78,205,196,0.3))"></div>
+        <span class="ms" style="color:rgba(78,205,196,0.5);font-size:0.9rem">bolt</span>
+        <div class="flex-1 h-px" style="background:linear-gradient(to left,transparent,rgba(78,205,196,0.3))"></div>`;
+      content.appendChild(sep);
+
+      const div = document.createElement('div');
+      div.className = 'fade-in rounded-2xl overflow-hidden';
+      div.style.cssText = `border:2px solid rgba(78,205,196,0.4);box-shadow:0 0 20px rgba(78,205,196,0.08),4px 4px 0 rgba(78,205,196,0.15);animation-delay:0.4s`;
+      div.innerHTML = `
+        <div class="px-4 py-3 flex items-center gap-3" style="background:linear-gradient(135deg,rgba(78,205,196,0.15) 0%,rgba(78,205,196,0.05) 100%);border-bottom:1px solid rgba(78,205,196,0.2)">
+          <span class="ms ms-fill" style="color:#4ECDC4;font-size:1.5rem">checklist</span>
+          <div>
+            <p class="text-[9px] font-bold uppercase tracking-[0.2em] cinzel" style="color:rgba(78,205,196,0.65)">Langkah Nyata</p>
+            <p class="text-sm font-black cinzel" style="color:#4ECDC4">3 Aksi untuk Minggu Ini</p>
+          </div>
+        </div>
+        <div class="p-4" style="background:#0d0d1a">
+          <div class="space-y-3">
+            ${actions.map((a, n) => `
+              <div class="flex items-start gap-3">
+                <span class="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold cinzel" style="background:rgba(78,205,196,0.12);color:#4ECDC4;border:1px solid rgba(78,205,196,0.35);margin-top:1px">${n+1}</span>
+                <p class="text-sm leading-relaxed" style="color:#F0E9D6">${a}</p>
+              </div>`).join('')}
+          </div>
+        </div>`;
+      content.appendChild(div);
+    }
   });
 }
 </script>
