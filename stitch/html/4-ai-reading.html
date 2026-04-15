@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Arvo:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec3713",
+                        "background-light": "#fdf6ec",
+                        "background-dark": "#221310",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"],
+                        "slab": ["Arvo", "serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Persistent Header -->
+<header class="flex items-center bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50 p-4 border-b border-primary/10 justify-between">
+<div class="flex size-10 shrink-0 items-center justify-center text-primary">
+<span class="material-symbols-outlined">menu</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-extrabold leading-tight tracking-widest flex-1 text-center font-display uppercase">AI TAROT</h2>
+<div class="flex size-10 items-center justify-end text-primary">
+<span class="material-symbols-outlined">account_circle</span>
+</div>
+</header>
+<main class="flex-1 flex flex-col items-center p-6 max-w-md mx-auto w-full relative overflow-hidden">
+<!-- Decorative Elements -->
+<span class="material-symbols-outlined absolute top-10 left-10 text-primary/20 text-sm">colors_spark</span>
+<span class="material-symbols-outlined absolute top-40 right-12 text-primary/10 text-xl">star</span>
+<span class="material-symbols-outlined absolute bottom-20 left-16 text-primary/15 text-lg">playing_cards</span>
+<span class="material-symbols-outlined absolute top-60 left-8 text-primary/10 text-xs">auto_awesome</span>
+<!-- Revealed Cards Strip -->
+<div class="grid grid-cols-3 gap-3 w-full mb-10 mt-4">
+<div class="flex flex-col gap-2">
+<div class="w-full bg-center bg-no-repeat aspect-[2/3] bg-cover rounded-lg shadow-lg border-2 border-primary/20 transform -rotate-2" data-alt="Tarot card showing a majestic king on a throne" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDgSaycumD3bWFJWZ6LG23Qxxkg4NsHTIM_ODcouuv_Mhi2622is9FbYyY2OcBwrBWC26ok2Ki3AmkK-QoRQOg80acBBLaSaSvFEA9ScCt3OsHwoi7NmVOxbldy2ZCtOLDtnJgPoc6oj8iyGDw55-OOEMMb9wWrz3RV8RNq6GYkP46Y7RYKCTH4kxZqfuOkN75koo52FS4IdC2TQAR2GvYKFjcsRPqY5FmZz_Q8XIOCY2vA2lM3TH5zOHUJrKAs-YELmvDCACK6jLM");'></div>
+</div>
+<div class="flex flex-col gap-2">
+<div class="w-full bg-center bg-no-repeat aspect-[2/3] bg-cover rounded-lg shadow-xl border-2 border-primary transform scale-105 z-10" data-alt="Tarot card with a glowing ethereal star" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDLD2XBB-0FyZ8akxde5zCywYIitwKq3C98AZkmY4BUhZ7uoZddfQHdfREEwp89QODUtD0G3XvwHZPwlV6FKpHuma6-novSqv3kh8rqHCeVvdh0AbbYpI_Md5niUxcPjXw4eVhSxGAEJG7UrRABXETvBD9I8D1sQbouVODR7k_ZXqlsx_ge0JvHE__oIyOpHOsKnTRLKFtr3CYOX2teYowyFwa2oGvlHQ1lmEj-ORpeUzozzusYszYJ4T3wUplWDgAEli1MSukEL3I");'></div>
+</div>
+<div class="flex flex-col gap-2">
+<div class="w-full bg-center bg-no-repeat aspect-[2/3] bg-cover rounded-lg shadow-lg border-2 border-primary/20 transform rotate-2" data-alt="Tarot card depicting a wise hermit with a lantern" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAqgyAQmDJc90sa8uDoRIyKlOu3jiOEf66dmb0qw-s2xSZ_jL4yGqPEXkyjbcsljQzA8QsItPG73_XCR0boMYMYZRwfWMVKUkU16PaATuN4SUNv2gOoWHSO2jCuNtbQNwAoHcuUNGsObhbXarXlQSW2NUn4k3dZAoikafcR0TvzqssScAzBSJibZzP_HSpHCXr0IYr0LcrQqXztF_uMo-6N6BX7mfLRiuxlJ4GvjZMR64uJE01XZF4JEtZYCPTF0oNhJHm9bN1IOy0");'></div>
+</div>
+</div>
+<!-- Reading Content -->
+<div class="text-center z-10">
+<h3 class="text-primary tracking-tight text-3xl font-slab font-bold leading-tight pb-6 pt-2">Your Reading</h3>
+<div class="space-y-4 px-2">
+<p class="text-slate-800 dark:text-slate-200 text-lg font-normal leading-relaxed text-center">
+                    Your career path is currently illuminated by the creative energy of your archetypes. The alignment suggests that your professional journey is approaching a pivotal crossroads where hidden talents will finally surface.
+                </p>
+<p class="text-slate-800 dark:text-slate-200 text-lg font-normal leading-relaxed text-center">
+                    As you move forward, expect a significant shift in leadership opportunities. The High Priestess energy urges you to look beyond the surface of corporate structures.
+                </p>
+<p class="text-slate-800 dark:text-slate-200 text-lg font-normal leading-relaxed text-center">
+                    Trust your intuition as you navigate these professional waters, for the stars align in your favor. A new mentor figure may appear to guide your transition into this next powerful phase.
+                </p>
+</div>
+</div>
+<!-- Actions -->
+<div class="w-full mt-12 space-y-4 px-4 z-10">
+<button class="w-full py-4 px-6 rounded-xl border-2 border-slate-900 dark:border-slate-100 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-bold text-lg hover:bg-slate-50 transition-colors">
+                Draw Again
+            </button>
+<button class="w-full py-2 text-primary font-semibold text-base flex items-center justify-center gap-2 underline underline-offset-4">
+<span class="material-symbols-outlined text-sm">share</span>
+                Share Your Reading
+            </button>
+</div>
+</main>
+<!-- Bottom Navigation -->
+</body></html>

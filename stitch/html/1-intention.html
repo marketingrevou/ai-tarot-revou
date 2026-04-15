@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec3713",
+                        "background-light": "#FDF6EC",
+                        "background-dark": "#221310",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>AI Tarot - Intention</title>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<header class="flex flex-col items-center pt-12 pb-8 px-6">
+<div class="text-center">
+<h2 class="text-primary text-sm font-extrabold tracking-[0.2em] uppercase mb-1">AI TAROT</h2>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-widest">The AI Age Reading</p>
+</div>
+</header>
+<main class="flex-1 flex flex-col items-center justify-center px-6 max-w-xl mx-auto w-full">
+<div class="w-full space-y-12">
+<!-- Hero Image / Graphic Placeholder -->
+<div class="relative w-full aspect-square max-w-[300px] mx-auto overflow-hidden rounded-xl bg-primary/5 flex items-center justify-center">
+<div class="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent"></div>
+<span class="material-symbols-outlined text-primary text-8xl opacity-80" style="font-variation-settings: 'FILL' 1">
+                    auto_awesome
+                </span>
+<img alt="Abstract mystical tarot cards with futuristic neon patterns" class="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-40" data-alt="Abstract mystical tarot cards with futuristic neon patterns" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5oMl-wMPUCtYaM7QHMj3HYUbG8qWaHHKKqvkRYiORqNYSSwASx4BhXc1rSEGicLiv94OwwrQmg4uFUwqmTt6yF20l6FEwtiaeSfZi-ZNMJUjZpa2OFsnDriQm6mmNY5s3aRflkEIue3nRsLRiWNcTuI-a7Scy_bhKTQAHEKXbOrnZcsaxUt-8uEMgmnelXn23OduzTfMh40-xgYxAazs8zxL1PM72e6ohvk9POfb82-_hnshQ5W-N06ybx07_WqJG7uQl1sl7AO8"/>
+</div>
+<div class="text-center space-y-4">
+<h1 class="text-4xl md:text-5xl font-extrabold leading-[1.1] tracking-tight text-slate-900 dark:text-slate-50">
+                    What does the AI era hold for you?
+                </h1>
+<p class="text-lg text-slate-600 dark:text-slate-400">
+                    Seek clarity on your professional path in the age of machines.
+                </p>
+</div>
+<div class="w-full space-y-4">
+<div class="relative">
+<label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 ml-1">Your Focus</label>
+<input class="w-full h-16 px-6 bg-transparent border-[3px] border-slate-900 dark:border-slate-100 rounded-xl text-lg font-medium placeholder:text-slate-400 focus:ring-primary focus:border-primary transition-all" placeholder="Your profession or current role" type="text"/>
+</div>
+</div>
+</div>
+</main>
+</body></html>

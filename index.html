@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Cinzel:wght@400;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          "primary":    "#D4A847",
+          "bg-main":    "#080810",
+          "bg-dark":    "#1a1a2e",
+          "gold-dim":   "#9a7a32",
+          "parchment":  "#F0E9D6",
+        },
+        fontFamily: {
+          "display": ["Plus Jakarta Sans", "sans-serif"],
+          "cinzel":  ["Cinzel", "serif"],
+        },
+      },
+    },
+  }
+</script>
+<title>AI Tarot</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔮</text></svg>">
+<style>
+  body {
+    background-color: #080810;
+    color: #F0E9D6;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    min-height: 100dvh;
+  }
+
+  /* ── Starfield background ─────────────────────────── */
+  .star-bg {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .star-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle, rgba(212,168,71,0.7) 1px, transparent 1px),
+      radial-gradient(circle, rgba(240,233,214,0.5) 1px, transparent 1px),
+      radial-gradient(circle, rgba(212,168,71,0.4) 1.5px, transparent 1.5px),
+      radial-gradient(circle, rgba(240,233,214,0.3) 1px, transparent 1px);
+    background-size: 200px 200px, 150px 150px, 300px 300px, 100px 100px;
+    background-position: 20px 40px, 80px 120px, 160px 60px, 50px 170px;
+    opacity: 0.25;
+  }
+  .star-bg svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.07;
+  }
+
+  /* ── Screens ──────────────────────────────────────── */
+  .screen { display: none; min-height: 100dvh; flex-direction: column; position: relative; z-index: 1; }
+  .screen.active { display: flex; }
+
+  /* ── Card selection ───────────────────────────────── */
+  .card-item { cursor: pointer; }
+  .card-item.selected { outline: 3px solid #D4A847; outline-offset: 2px; }
+
+  /* Mobile scroll strip — hide scrollbar */
+  #card-grid::-webkit-scrollbar { display: none; }
+
+  /* ── Animations ───────────────────────────────────── */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .fade-in { animation: fadeInUp 0.5s ease forwards; opacity: 0; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin { animation: spin 1s linear infinite; display: inline-block; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .pulse { animation: pulse 1.5s ease-in-out infinite; }
+
+  @keyframes twinkle { 0%,100%{opacity:0.6} 50%{opacity:1} }
+
+  /* ── Material Symbols ─────────────────────────────── */
+  .ms { font-family: "Material Symbols Outlined"; font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24; }
+  .ms-fill { font-variation-settings: "FILL" 1; }
+
+  /* ── Inputs ───────────────────────────────────────── */
+  .tarot-input {
+    width: 100%;
+    height: 3.5rem;
+    padding: 0 1.25rem;
+    background: #0d0d1a !important;
+    border: 2px solid rgba(212,168,71,0.3);
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #F0E9D6 !important;
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    -webkit-text-fill-color: #F0E9D6 !important;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  .tarot-input::placeholder { color: rgba(240,233,214,0.55) !important; -webkit-text-fill-color: rgba(240,233,214,0.55) !important; opacity: 1; }
+  .tarot-input:-webkit-autofill,
+  .tarot-input:-webkit-autofill:hover,
+  .tarot-input:-webkit-autofill:focus,
+  .tarot-input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #0d0d1a inset !important;
+    -webkit-text-fill-color: #F0E9D6 !important;
+    caret-color: #F0E9D6;
+  }
+  .tarot-input:focus { border-color: #D4A847; }
+
+  /* ── Cinzel headings ──────────────────────────────── */
+  .cinzel { font-family: "Cinzel", serif; }
+</style>
+</head>
+<body>
+
+<!-- Fixed star-field background -->
+<div class="star-bg">
+  <svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+    <!-- Constellation 1 — Orion-ish, top-left -->
+    <g stroke="#D4A847" stroke-width="0.8" fill="none">
+      <line x1="60"  y1="80"  x2="120" y2="110"/>
+      <line x1="120" y1="110" x2="100" y2="170"/>
+      <line x1="100" y1="170" x2="140" y2="220"/>
+      <line x1="120" y1="110" x2="160" y2="130"/>
+      <line x1="160" y1="130" x2="200" y2="100"/>
+    </g>
+    <g fill="#D4A847">
+      <polygon points="60,75  62,80  60,85  58,80"  opacity="0.9"/>
+      <polygon points="120,105 122,110 120,115 118,110" opacity="0.8"/>
+      <polygon points="100,165 102,170 100,175 98,170"  opacity="0.7"/>
+      <polygon points="140,215 143,220 140,225 137,220" opacity="0.85"/>
+      <polygon points="160,125 162,130 160,135 158,130" opacity="0.7"/>
+      <polygon points="200,95  202,100 200,105 198,100" opacity="0.9"/>
+    </g>
+
+    <!-- Constellation 2 — top-right -->
+    <g stroke="#D4A847" stroke-width="0.8" fill="none">
+      <line x1="580" y1="50"  x2="640" y2="90"/>
+      <line x1="640" y1="90"  x2="700" y2="70"/>
+      <line x1="700" y1="70"  x2="750" y2="120"/>
+      <line x1="640" y1="90"  x2="650" y2="150"/>
+    </g>
+    <g fill="#D4A847">
+      <polygon points="580,45  583,50  580,55  577,50"  opacity="0.9"/>
+      <polygon points="640,85  643,90  640,95  637,90"  opacity="0.8"/>
+      <polygon points="700,65  703,70  700,75  697,70"  opacity="0.85"/>
+      <polygon points="750,115 754,120 750,125 746,120" opacity="0.9"/>
+      <polygon points="650,145 653,150 650,155 647,150" opacity="0.7"/>
+    </g>
+
+    <!-- Constellation 3 — bottom-center -->
+    <g stroke="#D4A847" stroke-width="0.8" fill="none">
+      <line x1="300" y1="420" x2="360" y2="450"/>
+      <line x1="360" y1="450" x2="420" y2="430"/>
+      <line x1="420" y1="430" x2="480" y2="460"/>
+      <line x1="360" y1="450" x2="370" y2="510"/>
+    </g>
+    <g fill="#D4A847">
+      <polygon points="300,415 303,420 300,425 297,420" opacity="0.75"/>
+      <polygon points="360,445 363,450 360,455 357,450" opacity="0.85"/>
+      <polygon points="420,425 423,430 420,435 417,430" opacity="0.8"/>
+      <polygon points="480,455 484,460 480,465 476,460" opacity="0.7"/>
+      <polygon points="370,505 374,510 370,515 366,510" opacity="0.75"/>
+    </g>
+
+    <!-- Scattered small stars -->
+    <g fill="#F0E9D6" opacity="0.5">
+      <circle cx="250" cy="100" r="1"/>
+      <circle cx="450" cy="60"  r="1.2"/>
+      <circle cx="530" cy="200" r="1"/>
+      <circle cx="180" cy="320" r="1.2"/>
+      <circle cx="680" cy="310" r="1"/>
+      <circle cx="90"  cy="450" r="1.2"/>
+      <circle cx="720" cy="400" r="1"/>
+      <circle cx="400" cy="300" r="1.2"/>
+      <circle cx="340" cy="200" r="1"/>
+      <circle cx="560" cy="480" r="1"/>
+    </g>
+  </svg>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SCREEN 1 — LANDING
+═══════════════════════════════════════════════════ -->
+<div id="screen-1" class="screen active">
+  <main class="flex-1 flex flex-col items-center justify-center px-6 max-w-sm mx-auto w-full gap-8">
+
+    <!-- RevoU Logo -->
+    <img src="images/revoulogo.png" alt="RevoU" class="w-20 h-20 object-contain opacity-90" />
+
+    <!-- Headline -->
+    <div class="text-center space-y-2">
+      <p class="cinzel text-xs tracking-[0.3em] uppercase" style="color:rgba(212,168,71,0.7)">✦ Kartu Masa Depanmu ✦</p>
+      <h1 class="text-3xl font-extrabold leading-tight tracking-tight" style="color:#F0E9D6">Cek masa depan kamu di era AI</h1>
+    </div>
+
+    <!-- Inputs + CTA -->
+    <div class="w-full space-y-3">
+      <input id="name-input"
+        class="tarot-input"
+        placeholder="Nama kamu"
+        type="text"
+      />
+      <input id="email-input"
+        class="tarot-input"
+        placeholder="Email kamu"
+        type="email"
+        onkeydown="if(event.key==='Enter') goToSelection()"
+      />
+      <p id="input-error" class="text-xs mt-1 ml-1 hidden" style="color:#e57373">Isi nama dan email dulu ya! 😅</p>
+      <button onclick="goToSelection()"
+        class="w-full h-14 font-bold text-lg rounded-xl flex items-center justify-center gap-2 transition-all cinzel"
+        style="background:#D4A847;color:#080810"
+        onmouseover="this.style.background='#b8912e'" onmouseout="this.style.background='#D4A847'">
+        Mulai
+        <span class="ms" style="font-family:'Material Symbols Outlined'">arrow_forward</span>
+      </button>
+    </div>
+
+  </main>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SCREEN 2 — CARD SELECTION
+═══════════════════════════════════════════════════ -->
+<div id="screen-2" class="screen relative">
+  <!-- Gold glow bg -->
+  <div class="absolute inset-0 pointer-events-none overflow-hidden opacity-10">
+    <div class="absolute -top-20 -right-20 w-72 h-72 rounded-full blur-[120px]" style="background:#D4A847"></div>
+    <div class="absolute -bottom-20 -left-20 w-72 h-72 rounded-full blur-[120px]" style="background:#D4A847"></div>
+  </div>
+
+  <header class="relative z-10 flex justify-center items-center flex-col pt-8 pb-4 px-6">
+    <div class="flex items-center gap-2">
+      <span class="ms ms-fill" style="color:#D4A847">auto_awesome</span>
+      <h1 class="cinzel text-xl font-bold tracking-widest uppercase" style="color:#F0E9D6">AI Tarot</h1>
+    </div>
+  </header>
+
+  <div class="relative z-10 flex flex-col items-center mb-6 px-6">
+    <h2 class="text-2xl font-bold text-center leading-tight" style="color:#F0E9D6">Pilih 3 kartu</h2>
+  </div>
+
+  <div id="card-grid-outer" class="relative z-10 flex-1 w-full">
+    <div id="card-grid"></div>
+  </div>
+
+  <footer class="relative z-10 pt-6 pb-8 px-6 max-w-md mx-auto w-full">
+    <button id="reveal-btn" onclick="goToReveal()" disabled
+      class="w-full py-5 px-6 font-bold rounded-xl flex items-center justify-center gap-3 transition-all cursor-not-allowed cinzel"
+      style="background:#1a1a2e;color:#3a3a5c">
+      <span>Mulai Ramalan</span>
+    </button>
+  </footer>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SCREEN 3 — REVEAL
+═══════════════════════════════════════════════════ -->
+<div id="screen-3" class="screen">
+  <header class="sticky top-0 z-50 backdrop-blur-md border-b" style="background:rgba(8,8,16,0.92);border-color:rgba(212,168,71,0.15)">
+    <div class="flex items-center p-4 justify-between max-w-md mx-auto">
+      <button onclick="goTo(2)" class="ms" style="color:#D4A847">arrow_back</button>
+      <h2 class="cinzel text-lg font-bold leading-tight tracking-widest flex-1 text-center uppercase" style="color:#F0E9D6">AI TAROT</h2>
+      <div class="w-6"></div>
+    </div>
+  </header>
+
+  <main class="flex-1 flex flex-col items-center justify-center p-4 max-w-md mx-auto w-full">
+    <!-- Position labels -->
+    <div class="flex w-full justify-between px-2 mb-4">
+      <span class="text-[10px] font-bold tracking-[0.2em] uppercase w-1/3 text-center cinzel" style="color:#D4A847">Masa Lalu</span>
+      <span class="text-[10px] font-bold tracking-[0.2em] uppercase w-1/3 text-center cinzel" style="color:#D4A847">Sekarang</span>
+      <span class="text-[10px] font-bold tracking-[0.2em] uppercase w-1/3 text-center cinzel" style="color:#D4A847">Masa Depan</span>
+    </div>
+
+    <div id="revealed-cards" class="grid grid-cols-3 gap-3 w-full mb-6"></div>
+
+    <p id="reveal-summary" class="text-sm font-medium italic text-center px-4 mb-8" style="color:rgba(240,233,214,0.75)"></p>
+
+    <button onclick="goToReading()"
+      class="w-full max-w-xs py-4 px-8 rounded-full font-bold text-base shadow-lg transition-transform active:scale-95 cinzel"
+      style="background:#D4A847;color:#080810">
+      BACA MASA DEPANKU! 🚀
+    </button>
+  </main>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SCREEN 4 — AI READING
+═══════════════════════════════════════════════════ -->
+<div id="screen-4" class="screen">
+  <header class="sticky top-0 z-50 backdrop-blur-md border-b flex items-center p-4 justify-between" style="background:rgba(8,8,16,0.92);border-color:rgba(212,168,71,0.15)">
+    <button onclick="goTo(3)" class="ms" style="color:#D4A847">arrow_back</button>
+    <h2 class="cinzel text-lg font-bold leading-tight tracking-widest flex-1 text-center uppercase" style="color:#F0E9D6">AI Tarot</h2>
+    <div class="w-6"></div>
+  </header>
+
+  <main class="flex-1 flex flex-col items-center px-4 pt-4 pb-10 max-w-md mx-auto w-full gap-6">
+
+    <!-- Title -->
+    <div class="text-center">
+      <h3 class="cinzel text-3xl font-bold" style="color:#D4A847">Ramalanmu 🔮</h3>
+      <p class="text-xs mt-1 uppercase tracking-widest font-semibold" style="color:rgba(240,233,214,0.45)">Bacaan Tiga Kartu</p>
+    </div>
+
+    <!-- Loading state -->
+    <div id="reading-loading" class="flex flex-col items-center gap-3 py-10">
+      <span class="ms spin" style="color:#D4A847;font-size:3rem">autorenew</span>
+      <p class="text-sm pulse" style="color:rgba(240,233,214,0.6)">Kartu-kartunya lagi ngomong… sabar ya! ✨</p>
+    </div>
+
+    <!-- Card reading sections (filled by JS) -->
+    <div id="reading-content" class="w-full space-y-4 hidden"></div>
+
+    <!-- Reset button (hidden until reading is done) -->
+    <div id="reading-footer" class="w-full hidden">
+      <button onclick="resetApp()"
+        class="w-full py-4 px-6 rounded-xl font-bold text-lg transition-colors cinzel"
+        style="border:2px solid #D4A847;background:transparent;color:#D4A847"
+        onmouseover="this.style.background='rgba(212,168,71,0.1)'" onmouseout="this.style.background='transparent'">
+        Cabut Lagi! 🃏
+      </button>
+    </div>
+
+  </main>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     APP LOGIC
+═══════════════════════════════════════════════════ -->
+<script>
+// ── SUPABASE ────────────────────────────────────────────────────────────────
+const SUPABASE_URL  = "https://mojbdsayviuihhootyir.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vamJkc2F5dml1aWhob290eWlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0OTIxNDQsImV4cCI6MjA4ODA2ODE0NH0.18J9GxpTpoFHFP-XN1zhWqaAwK7cjF2UI3eUkBjY5HE";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+async function saveUserToSupabase(name, email) {
+  const { error } = await sb.from("tarot_users").insert({ name, email });
+  if (error) console.error("Supabase insert error:", error.message);
+}
+
+// ── CARD DECK ──────────────────────────────────────────────────────────────
+const CARDS = [
+  { id:1,  name:"The Automation",   icon:"smart_toy",    color:"#FF8A80" },
+  { id:2,  name:"The Collaborator", icon:"handshake",    color:"#A5D6A7" },
+  { id:3,  name:"The Disruptor",    icon:"bolt",         color:"#FFF176" },
+  { id:4,  name:"The Architect",    icon:"architecture", color:"#90CAF9" },
+  { id:5,  name:"The Learner",      icon:"school",       color:"#CE93D8" },
+  { id:6,  name:"The Pioneer",      icon:"explore",      color:"#FFCC80" },
+  { id:7,  name:"The Connector",    icon:"hub",          color:"#80DEEA" },
+  { id:8,  name:"The Creator",      icon:"palette",      color:"#F48FB1" },
+  { id:9,  name:"The Strategist",   icon:"psychology",   color:"#B0BEC5" },
+  { id:10, name:"The Innovator",    icon:"lightbulb",    color:"#C5E1A5" },
+  { id:11, name:"The Guardian",     icon:"security",     color:"#EF9A9A" },
+  { id:12, name:"The Visionary",    icon:"visibility",   color:"#FFE082" },
+];
+
+// ── STATE ───────────────────────────────────────────────────────────────────
+const state = { name:"", email:"", profession:"", deck:[], selected:[] };
+
+// ── HELPERS ─────────────────────────────────────────────────────────────────
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i+1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ── NAVIGATION ──────────────────────────────────────────────────────────────
+function goTo(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(`screen-${n}`).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function goToSelection() {
+  const nameInput  = document.getElementById('name-input');
+  const emailInput = document.getElementById('email-input');
+  const err        = document.getElementById('input-error');
+  state.name  = nameInput.value.trim();
+  state.email = emailInput.value.trim();
+  state.profession = state.name;
+  if (!state.name || !state.email) {
+    err.classList.remove('hidden');
+    if (!state.name) nameInput.focus();
+    else emailInput.focus();
+    return;
+  }
+  err.classList.add('hidden');
+  saveUserToSupabase(state.name, state.email);
+  state.deck = shuffle(CARDS);
+  state.selected = [];
+  renderCardGrid();
+  updateSelectionUI();
+  goTo(2);
+}
+
+function goToReveal() {
+  if (state.selected.length !== 3) return;
+  renderRevealScreen();
+  goTo(3);
+}
+
+function goToReading() {
+  goTo(4);
+  fetchReading();
+}
+
+function resetApp() {
+  document.getElementById('name-input').value = '';
+  document.getElementById('email-input').value = '';
+  goTo(1);
+}
+
+// ── SCREEN 2: CARD GRID ─────────────────────────────────────────────────────
+function cardBackHTML() {
+  // Constellation SVG pattern on card back
+  return `
+    <div class="w-full h-full flex items-center justify-center relative" style="background:rgba(212,168,71,0.06)">
+      <!-- Constellation pattern -->
+      <svg class="absolute inset-0 w-full h-full" viewBox="0 0 90 144" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+        <g stroke="#D4A847" stroke-width="0.5" opacity="0.35" fill="none">
+          <line x1="20" y1="30"  x2="45" y2="55"/>
+          <line x1="45" y1="55"  x2="70" y2="35"/>
+          <line x1="45" y1="55"  x2="50" y2="90"/>
+          <line x1="50" y1="90"  x2="25" y2="110"/>
+          <line x1="50" y1="90"  x2="72" y2="115"/>
+        </g>
+        <g fill="#D4A847" opacity="0.55">
+          <polygon points="20,27 21.5,30 20,33 18.5,30"/>
+          <polygon points="45,52 46.5,55 45,58 43.5,55"/>
+          <polygon points="70,32 71.5,35 70,38 68.5,35"/>
+          <polygon points="50,87 51.5,90 50,93 48.5,90"/>
+          <polygon points="25,107 26.5,110 25,113 23.5,110"/>
+          <polygon points="72,112 73.5,115 72,118 70.5,115"/>
+        </g>
+      </svg>
+      <!-- Inner frame -->
+      <div class="absolute" style="inset:8px;border:1px solid rgba(212,168,71,0.25);border-radius:4px"></div>
+      <!-- Center diamond icon -->
+      <span class="ms relative z-10" style="color:rgba(212,168,71,0.45);font-size:1.5rem">diamond</span>
+    </div>`;
+}
+
+function renderCardGrid() {
+  const grid = document.getElementById('card-grid');
+  grid.innerHTML = '';
+  const total = state.deck.length;
+  const isMobile = window.innerWidth < 640;
+
+  if (isMobile) {
+    // ── Mobile: two stacked fan rows (6 + 6) ─────────────
+    Object.assign(grid.style, {
+      display: 'flex', flexDirection: 'column', gap: '20px',
+      padding: '8px 0 8px', alignItems: 'center', overflow: 'visible',
+    });
+
+    [0, 1].forEach(g => {
+      const wrap = document.createElement('div');
+      Object.assign(wrap.style, {
+        display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        overflow: 'visible', width: '100%', minHeight: '130px',
+      });
+
+      for (let j = 0; j < 6; j++) {
+        const globalIdx = g * 6 + j;
+        const rot = (j / 5) * 40 - 20; // −20° to +20°
+
+        const div = document.createElement('div');
+        div.className = 'card-item rounded-lg overflow-hidden';
+        div.dataset.index = globalIdx;
+        div.dataset.rot = rot;
+        Object.assign(div.style, {
+          background: '#0d0d1a',
+          border: '2px solid rgba(212,168,71,0.45)',
+          width: '62px', height: '100px',
+          marginRight: j < 5 ? '-36px' : '0', flexShrink: '0',
+          zIndex: j, transformOrigin: 'bottom center',
+          transform: `rotate(${rot}deg)`,
+          transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+          boxShadow: '2px 3px 10px rgba(0,0,0,0.6)',
+        });
+        div.innerHTML = cardBackHTML();
+        div.addEventListener('click', () => toggleCard(globalIdx));
+        wrap.appendChild(div);
+      }
+
+      grid.appendChild(wrap);
+    });
+    return;
+  }
+
+  // ── Desktop: fan arc ─────────────────────────────────
+  Object.assign(grid.style, {
+    display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+    overflow: 'visible', minHeight: '240px', padding: '0 40px 24px', gap: '0',
+  });
+
+  state.deck.forEach((card, i) => {
+    const rot = (i / (total - 1)) * 44 - 22; // −22° to +22°
+
+    const div = document.createElement('div');
+    div.className = 'card-item rounded-lg overflow-hidden';
+    div.dataset.index = i;
+    div.dataset.rot = rot;
+    Object.assign(div.style, {
+      background: '#0d0d1a',
+      border: '2px solid rgba(212,168,71,0.45)',
+      width: '84px', height: '134px',
+      marginRight: '-52px', flexShrink: '0', zIndex: i,
+      transformOrigin: 'bottom center',
+      transform: `rotate(${rot}deg)`,
+      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+      boxShadow: '2px 4px 10px rgba(0,0,0,0.5)',
+    });
+    div.innerHTML = cardBackHTML();
+
+    div.addEventListener('mouseenter', () => {
+      if (div.classList.contains('selected')) return;
+      div.style.transform = 'rotate(0deg) translateY(-22px) scale(1.08)';
+      div.style.zIndex = '200';
+      div.style.boxShadow = '0 18px 36px rgba(212,168,71,0.25)';
+    });
+    div.addEventListener('mouseleave', () => {
+      if (div.classList.contains('selected')) return;
+      div.style.transform = `rotate(${rot}deg)`;
+      div.style.zIndex = i;
+      div.style.boxShadow = '2px 4px 10px rgba(0,0,0,0.5)';
+    });
+
+    div.addEventListener('click', () => toggleCard(i));
+    grid.appendChild(div);
+  });
+}
+
+function toggleCard(index) {
+  const card = state.deck[index];
+  const idx  = state.selected.findIndex(c => c.id === card.id);
+  if (idx !== -1) {
+    state.selected.splice(idx, 1);
+  } else {
+    if (state.selected.length >= 3) return;
+    state.selected.push(card);
+  }
+  updateSelectionUI();
+}
+
+function updateSelectionUI() {
+  const count    = state.selected.length;
+  const isMobile = window.innerWidth < 640;
+
+  document.querySelectorAll('.card-item').forEach((el, i) => {
+    const card       = state.deck[i];
+    const isSelected = state.selected.some(c => c.id === card.id);
+    const rot        = parseFloat(el.dataset.rot || 0);
+    el.classList.toggle('selected', isSelected);
+    el.style.borderColor = isSelected ? '#D4A847' : 'rgba(212,168,71,0.45)';
+
+    if (isMobile) {
+      if (isSelected) {
+        el.style.transform = 'rotate(0deg) translateY(-18px)';
+        el.style.zIndex    = '150';
+        el.style.boxShadow = '0 8px 20px rgba(212,168,71,0.4)';
+      } else {
+        el.style.transform = `rotate(${rot}deg)`;
+        el.style.zIndex    = i % 6;
+        el.style.boxShadow = '2px 3px 8px rgba(0,0,0,0.6)';
+      }
+    } else {
+      if (isSelected) {
+        el.style.transform  = 'rotate(0deg) translateY(-32px)';
+        el.style.zIndex     = '150';
+        el.style.boxShadow  = '0 14px 28px rgba(212,168,71,0.45)';
+      } else {
+        el.style.transform  = `rotate(${rot}deg)`;
+        el.style.zIndex     = i;
+        el.style.boxShadow  = '2px 4px 10px rgba(0,0,0,0.5)';
+      }
+    }
+  });
+
+  const btn = document.getElementById('reveal-btn');
+  if (count === 3) {
+    btn.disabled = false;
+    btn.style.background = '#D4A847';
+    btn.style.color = '#080810';
+    btn.style.cursor = 'pointer';
+    btn.innerHTML = '<span>Lihat Interpretasi</span><span class="ms">auto_awesome</span>';
+  } else {
+    btn.disabled = true;
+    btn.style.background = '#1a1a2e';
+    btn.style.color = '#3a3a5c';
+    btn.style.cursor = 'not-allowed';
+    btn.innerHTML = '<span>Lihat Interpretasi</span><span class="ms">lock</span>';
+  }
+}
+
+// ── SCREEN 3: REVEAL ────────────────────────────────────────────────────────
+function renderRevealScreen() {
+  const container = document.getElementById('revealed-cards');
+  container.innerHTML = '';
+
+  state.selected.forEach((card, i) => {
+    const div = document.createElement('div');
+    div.className = 'relative rounded-lg overflow-hidden fade-in';
+    div.style.cssText = `aspect-ratio:2/3;border:2px solid #D4A847;box-shadow:3px 3px 0 rgba(212,168,71,0.35);animation-delay:${i*0.15}s`;
+    div.innerHTML = `
+      <div class="absolute inset-0 flex flex-col">
+        <div class="flex-1 flex items-center justify-center" style="background:${card.color}">
+          <span class="ms ms-fill text-slate-900" style="font-size:2rem">${card.icon}</span>
+        </div>
+        <div class="py-2 px-1 text-center" style="background:#0d0d1a;border-top:1px solid rgba(212,168,71,0.4)">
+          <p class="font-black leading-none uppercase cinzel" style="font-size:7px;color:#D4A847;letter-spacing:0.05em">${card.name}</p>
+        </div>
+      </div>`;
+    container.appendChild(div);
+  });
+
+  const names = state.selected.map(c => c.name);
+  document.getElementById('reveal-summary').textContent =
+    `"${names[0]} di masa lalu, ${names[1]} di masa kini, ${names[2]} di masa depan."`;
+}
+
+// ── SCREEN 4: READING ───────────────────────────────────────────────────────
+async function fetchReading() {
+  _accumulated = '';
+  const positions = ['Masa Lalu', 'Sekarang', 'Masa Depan'];
+  const cards = state.selected.map((c, i) => ({ position: positions[i], name: c.name }));
+
+  // Reset UI
+  document.getElementById('reading-loading').classList.remove('hidden');
+  document.getElementById('reading-content').classList.add('hidden');
+  document.getElementById('reading-content').innerHTML = '';
+  document.getElementById('reading-footer').classList.add('hidden');
+
+  try {
+    const res = await fetch('/api/reading', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profession: state.profession, cards }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') {
+          document.getElementById('reading-footer').classList.remove('hidden');
+          break;
+        }
+        try {
+          const chunk = JSON.parse(data);
+          if (chunk.text) appendStreamChunk(chunk.text);
+        } catch {}
+      }
+    }
+  } catch (err) {
+    document.getElementById('reading-loading').classList.add('hidden');
+    document.getElementById('reading-content').classList.remove('hidden');
+    document.getElementById('reading-content').innerHTML = `
+      <div class="text-center space-y-2 p-6">
+        <span class="ms" style="color:#e57373;font-size:2rem">error</span>
+        <p class="text-sm font-medium" style="color:#e57373">Aduh, gagal ngambil ramalan nih 😓</p>
+        <p class="text-xs" style="color:rgba(240,233,214,0.45)">${err.message}</p>
+      </div>`;
+    document.getElementById('reading-footer').classList.remove('hidden');
+  }
+}
+
+// Accumulate streamed text and render per-card panels
+let _accumulated = '';
+const _positions = ['Masa Lalu', 'Sekarang', 'Masa Depan'];
+const _posIcons  = ['history', 'radio_button_checked', 'rocket_launch'];
+
+function appendStreamChunk(text) {
+  _accumulated += text;
+  const parts = _accumulated.split(/\n\n+/);
+  const content = document.getElementById('reading-content');
+  const loading = document.getElementById('reading-loading');
+
+  // Show content area as soon as first text arrives
+  if (parts.some(p => p.trim())) {
+    loading.classList.add('hidden');
+    content.classList.remove('hidden');
+  }
+
+  content.innerHTML = '';
+  parts.forEach((part, i) => {
+    if (!part.trim() || i >= 3) return;
+    const card = state.selected[i];
+    const pos  = _positions[i];
+    const icon = _posIcons[i];
+
+    const div = document.createElement('div');
+    div.className = 'fade-in rounded-2xl overflow-hidden';
+    div.style.cssText = `border:2px solid rgba(212,168,71,0.5);box-shadow:4px 4px 0 rgba(212,168,71,0.2);animation-delay:${i*0.1}s`;
+    div.innerHTML = `
+      <div class="flex items-center gap-3 px-4 py-3" style="background:${card.color}">
+        <div class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(0,0,0,0.12)">
+          <span class="ms ms-fill text-slate-900" style="font-size:1.4rem">${card.icon}</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-1 mb-0.5">
+            <span class="ms text-slate-700" style="font-size:0.9rem">${icon}</span>
+            <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-700 cinzel">${pos}</p>
+          </div>
+          <p class="text-sm font-black text-slate-900 leading-tight cinzel">${card.name}</p>
+        </div>
+      </div>
+      <div class="p-4" style="background:#0d0d1a">
+        <p class="text-sm leading-relaxed text-left" style="color:#F0E9D6">${part.trim()}</p>
+      </div>`;
+    content.appendChild(div);
+  });
+}
+</script>
+</body>
+</html>
