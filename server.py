@@ -18,6 +18,11 @@ def index():
     return send_from_directory(".", "index.html")
 
 
+@app.route("/images/<path:filename>")
+def serve_image(filename):
+    return send_from_directory("images", filename)
+
+
 # ── AI Reading endpoint (streaming) ─────────────────────────────────────────
 @app.route("/api/reading", methods=["POST"])
 def reading():
