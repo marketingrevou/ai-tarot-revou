@@ -224,13 +224,18 @@
         placeholder="Email kamu"
         type="email"
       />
+      <input id="phone-input"
+        class="tarot-input"
+        placeholder="Nomor HP kamu (mis. 08123456789)"
+        type="tel"
+      />
       <input id="major-input"
         class="tarot-input"
         placeholder="Jurusan / bidang kerjamu (mis. UI/UX, Data Science, Marketing)"
         type="text"
         onkeydown="if(event.key==='Enter') goToSelection()"
       />
-      <p id="input-error" class="text-xs mt-1 ml-1 hidden" style="color:#e57373">Isi nama, email, dan bidang studi/kerja kamu ya! 😅</p>
+      <p id="input-error" class="text-xs mt-1 ml-1 hidden" style="color:#e57373">Isi nama, email, nomor HP, dan bidang studi/kerja kamu ya! 😅</p>
       <button onclick="goToSelection()"
         class="w-full h-14 font-bold text-lg rounded-xl flex items-center justify-center gap-2 transition-all cinzel"
         style="background:#D4A847;color:#080810"
@@ -339,15 +344,6 @@
     <!-- Card reading sections (filled by JS) -->
     <div id="reading-content" class="w-full space-y-4 hidden"></div>
 
-    <!-- Reset button (hidden until reading is done) -->
-    <div id="reading-footer" class="w-full hidden">
-      <button onclick="resetApp()"
-        class="w-full py-4 px-6 rounded-xl font-bold text-lg transition-colors cinzel"
-        style="border:2px solid #D4A847;background:transparent;color:#D4A847"
-        onmouseover="this.style.background='rgba(212,168,71,0.1)'" onmouseout="this.style.background='transparent'">
-        Cabut Lagi! 🃏
-      </button>
-    </div>
 
   </main>
 </div>
@@ -362,8 +358,8 @@ const SUPABASE_URL  = "https://mojbdsayviuihhootyir.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vamJkc2F5dml1aWhob290eWlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI0OTIxNDQsImV4cCI6MjA4ODA2ODE0NH0.18J9GxpTpoFHFP-XN1zhWqaAwK7cjF2UI3eUkBjY5HE";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-async function saveUserToSupabase(name, email) {
-  const { error } = await sb.from("tarot_users").insert({ name, email });
+async function saveUserToSupabase(name, email, phone) {
+  const { error } = await sb.from("tarot_users").insert({ name, email, phone });
   if (error) console.error("Supabase insert error:", error.message);
 }
 
@@ -407,20 +403,23 @@ function goTo(n) {
 function goToSelection() {
   const nameInput  = document.getElementById('name-input');
   const emailInput = document.getElementById('email-input');
+  const phoneInput = document.getElementById('phone-input');
   const majorInput = document.getElementById('major-input');
   const err        = document.getElementById('input-error');
   state.name       = nameInput.value.trim();
   state.email      = emailInput.value.trim();
+  state.phone      = phoneInput.value.trim();
   state.profession = majorInput.value.trim();
-  if (!state.name || !state.email || !state.profession) {
+  if (!state.name || !state.email || !state.phone || !state.profession) {
     err.classList.remove('hidden');
     if (!state.name) nameInput.focus();
     else if (!state.email) emailInput.focus();
+    else if (!state.phone) phoneInput.focus();
     else majorInput.focus();
     return;
   }
   err.classList.add('hidden');
-  saveUserToSupabase(state.name, state.email);
+  saveUserToSupabase(state.name, state.email, state.phone);
   state.deck = shuffle(CARDS);
   state.selected = [];
   renderCardGrid();
@@ -444,6 +443,7 @@ function goToReading() {
 function resetApp() {
   document.getElementById('name-input').value = '';
   document.getElementById('email-input').value = '';
+  document.getElementById('phone-input').value = '';
   goTo(1);
 }
 
@@ -666,8 +666,6 @@ async function fetchReading() {
   document.getElementById('reading-loading').classList.remove('hidden');
   document.getElementById('reading-content').classList.add('hidden');
   document.getElementById('reading-content').innerHTML = '';
-  document.getElementById('reading-footer').classList.add('hidden');
-
   try {
     const res = await fetch('/api/reading', {
       method: 'POST',
@@ -694,7 +692,6 @@ async function fetchReading() {
         if (!line.startsWith('data: ')) continue;
         const data = line.slice(6).trim();
         if (data === '[DONE]') {
-          document.getElementById('reading-footer').classList.remove('hidden');
           break;
         }
         try {
@@ -712,7 +709,6 @@ async function fetchReading() {
         <p class="text-sm font-medium" style="color:#e57373">Aduh, gagal ngambil ramalan nih 😓</p>
         <p class="text-xs" style="color:rgba(240,233,214,0.45)">${err.message}</p>
       </div>`;
-    document.getElementById('reading-footer').classList.remove('hidden');
   }
 }
 
