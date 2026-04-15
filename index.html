@@ -716,7 +716,7 @@ async function fetchReading() {
   }
 }
 
-// Accumulate streamed text and render per-card panels
+// Accumulate streamed text and render panels — created once, updated in-place (no flicker)
 let _accumulated = '';
 const _positions = ['Masa Lalu', 'Sekarang', 'Masa Depan'];
 const _posIcons  = ['history', 'radio_button_checked', 'rocket_launch'];
@@ -727,125 +727,79 @@ function appendStreamChunk(text) {
   const content = document.getElementById('reading-content');
   const loading = document.getElementById('reading-loading');
 
-  // Show content area as soon as first text arrives
   if (parts.some(p => p.trim())) {
     loading.classList.add('hidden');
     content.classList.remove('hidden');
   }
 
-  content.innerHTML = '';
   parts.forEach((part, i) => {
-    if (!part.trim() || i >= 5) return;
+    if (!part.trim() || i >= 4) return;
 
-    if (i < 3) {
-      // ── Card reading panel ───────────────────────────────────────
-      const card = state.selected[i];
-      const pos  = _positions[i];
-      const icon = _posIcons[i];
+    const panelId = `rp-${i}`;
+    const textId  = `rt-${i}`;
 
-      // Split "Ingat: ..." key message from main reading text
-      const ingatMatch = part.match(/\nIngat:\s*/i);
-      let mainText = part.trim();
-      let keyMsg   = null;
-      if (ingatMatch) {
-        const idx = part.indexOf(ingatMatch[0]);
-        mainText = part.substring(0, idx).trim();
-        keyMsg   = part.substring(idx + ingatMatch[0].length).trim();
+    // Create panel once
+    if (!document.getElementById(panelId)) {
+      if (i === 3) {
+        // Separator before Langkah Nyata
+        const sep = document.createElement('div');
+        sep.id = 'rp-sep';
+        sep.className = 'flex items-center gap-3';
+        sep.innerHTML = `
+          <div class="flex-1 h-px" style="background:linear-gradient(to right,transparent,rgba(78,205,196,0.3))"></div>
+          <span class="ms" style="color:rgba(78,205,196,0.4);font-size:0.9rem">bolt</span>
+          <div class="flex-1 h-px" style="background:linear-gradient(to left,transparent,rgba(78,205,196,0.3))"></div>`;
+        content.appendChild(sep);
       }
 
       const div = document.createElement('div');
-      div.className = 'fade-in rounded-2xl overflow-hidden';
-      div.style.cssText = `border:2px solid rgba(212,168,71,0.5);box-shadow:4px 4px 0 rgba(212,168,71,0.2);animation-delay:${i*0.1}s`;
-      div.innerHTML = `
-        <div class="flex items-center gap-3 px-4 py-3" style="background:${card.color}">
-          <div class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(0,0,0,0.12)">
-            <span class="ms ms-fill text-slate-900" style="font-size:1.4rem">${card.icon}</span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-1 mb-0.5">
-              <span class="ms text-slate-700" style="font-size:0.9rem">${icon}</span>
-              <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-700 cinzel">${pos}</p>
+      div.id = panelId;
+
+      if (i < 3) {
+        // ── Card reading panel ─────────────────────────────────────
+        const card = state.selected[i];
+        div.className = 'fade-in rounded-2xl overflow-hidden';
+        div.style.cssText = `border:2px solid rgba(212,168,71,0.5);box-shadow:4px 4px 0 rgba(212,168,71,0.2);animation-delay:${i*0.1}s`;
+        div.innerHTML = `
+          <div class="flex items-center gap-3 px-4 py-3" style="background:${card.color}">
+            <div class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(0,0,0,0.12)">
+              <span class="ms ms-fill text-slate-900" style="font-size:1.4rem">${card.icon}</span>
             </div>
-            <p class="text-sm font-black text-slate-900 leading-tight cinzel">${card.name}</p>
-          </div>
-        </div>
-        <div class="px-4 pt-4 ${keyMsg ? 'pb-3' : 'pb-4'}" style="background:#0d0d1a">
-          <p class="text-sm leading-relaxed" style="color:#F0E9D6">${mainText}</p>
-        </div>
-        ${keyMsg ? `
-        <div class="px-4 pb-4" style="background:#0d0d1a">
-          <div class="rounded-xl p-3" style="background:rgba(212,168,71,0.07);border-left:3px solid rgba(212,168,71,0.65)">
-            <div class="flex items-start gap-2">
-              <span class="ms flex-shrink-0" style="color:#D4A847;font-size:1rem;margin-top:1px">auto_awesome</span>
-              <div>
-                <p class="text-[9px] font-bold uppercase tracking-[0.15em] cinzel mb-1" style="color:#D4A847">Pesan Kunci</p>
-                <p class="text-xs leading-relaxed italic" style="color:rgba(240,233,214,0.85)">${keyMsg}</p>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1 mb-0.5">
+                <span class="ms text-slate-700" style="font-size:0.9rem">${_posIcons[i]}</span>
+                <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-700 cinzel">${_positions[i]}</p>
               </div>
+              <p class="text-sm font-black text-slate-900 leading-tight cinzel">${card.name}</p>
             </div>
           </div>
-        </div>` : ''}`;
-      content.appendChild(div);
+          <div class="px-4 py-4" style="background:#0d0d1a">
+            <p id="${textId}" class="text-sm leading-relaxed" style="color:#F0E9D6"></p>
+          </div>`;
 
-    } else if (i === 3) {
-      // ── Synthesis panel ──────────────────────────────────────────
-      const sep = document.createElement('div');
-      sep.className = 'flex items-center gap-3';
-      sep.innerHTML = `
-        <div class="flex-1 h-px" style="background:linear-gradient(to right,transparent,rgba(212,168,71,0.3))"></div>
-        <span class="ms" style="color:rgba(212,168,71,0.5);font-size:0.9rem">flare</span>
-        <div class="flex-1 h-px" style="background:linear-gradient(to left,transparent,rgba(212,168,71,0.3))"></div>`;
-      content.appendChild(sep);
-
-      const div = document.createElement('div');
-      div.className = 'fade-in rounded-2xl overflow-hidden';
-      div.style.cssText = `border:2px solid rgba(212,168,71,0.65);box-shadow:0 0 20px rgba(212,168,71,0.1),4px 4px 0 rgba(212,168,71,0.2);animation-delay:0.3s`;
-      div.innerHTML = `
-        <div class="px-4 py-3 flex items-center gap-3" style="background:linear-gradient(135deg,rgba(212,168,71,0.18) 0%,rgba(212,168,71,0.07) 100%);border-bottom:1px solid rgba(212,168,71,0.25)">
-          <span class="ms ms-fill" style="color:#D4A847;font-size:1.5rem">stars</span>
-          <div>
-            <p class="text-[9px] font-bold uppercase tracking-[0.2em] cinzel" style="color:rgba(212,168,71,0.65)">Pesan Keseluruhan</p>
-            <p class="text-sm font-black cinzel" style="color:#D4A847">Sintesis Bacaanmu</p>
+      } else {
+        // ── Langkah Nyata panel ────────────────────────────────────
+        div.className = 'fade-in rounded-2xl overflow-hidden';
+        div.style.cssText = `border:2px solid rgba(78,205,196,0.4);box-shadow:0 0 20px rgba(78,205,196,0.08),4px 4px 0 rgba(78,205,196,0.15);animation-delay:0.3s`;
+        div.innerHTML = `
+          <div class="px-4 py-3 flex items-center gap-3" style="background:linear-gradient(135deg,rgba(78,205,196,0.15) 0%,rgba(78,205,196,0.05) 100%);border-bottom:1px solid rgba(78,205,196,0.2)">
+            <span class="ms ms-fill" style="color:#4ECDC4;font-size:1.5rem">bolt</span>
+            <div>
+              <p class="text-[9px] font-bold uppercase tracking-[0.2em] cinzel" style="color:rgba(78,205,196,0.65)">Langkah Nyata</p>
+              <p class="text-sm font-black cinzel" style="color:#4ECDC4">Aksi untuk Minggu Ini</p>
+            </div>
           </div>
-        </div>
-        <div class="p-5" style="background:#0d0d1a">
-          <p class="text-sm leading-relaxed text-center italic" style="color:rgba(240,233,214,0.9)">"${part.trim()}"</p>
-        </div>`;
-      content.appendChild(div);
+          <div class="p-5" style="background:#0d0d1a">
+            <p id="${textId}" class="text-sm leading-relaxed" style="color:#F0E9D6"></p>
+          </div>`;
+      }
 
-    } else if (i === 4) {
-      // ── Aksi Nyata panel ─────────────────────────────────────────
-      const actions = part.trim().split('\n').map(s => s.trim()).filter(s => s.length > 0);
-
-      const sep = document.createElement('div');
-      sep.className = 'flex items-center gap-3';
-      sep.innerHTML = `
-        <div class="flex-1 h-px" style="background:linear-gradient(to right,transparent,rgba(78,205,196,0.3))"></div>
-        <span class="ms" style="color:rgba(78,205,196,0.5);font-size:0.9rem">bolt</span>
-        <div class="flex-1 h-px" style="background:linear-gradient(to left,transparent,rgba(78,205,196,0.3))"></div>`;
-      content.appendChild(sep);
-
-      const div = document.createElement('div');
-      div.className = 'fade-in rounded-2xl overflow-hidden';
-      div.style.cssText = `border:2px solid rgba(78,205,196,0.4);box-shadow:0 0 20px rgba(78,205,196,0.08),4px 4px 0 rgba(78,205,196,0.15);animation-delay:0.4s`;
-      div.innerHTML = `
-        <div class="px-4 py-3 flex items-center gap-3" style="background:linear-gradient(135deg,rgba(78,205,196,0.15) 0%,rgba(78,205,196,0.05) 100%);border-bottom:1px solid rgba(78,205,196,0.2)">
-          <span class="ms ms-fill" style="color:#4ECDC4;font-size:1.5rem">checklist</span>
-          <div>
-            <p class="text-[9px] font-bold uppercase tracking-[0.2em] cinzel" style="color:rgba(78,205,196,0.65)">Langkah Nyata</p>
-            <p class="text-sm font-black cinzel" style="color:#4ECDC4">3 Aksi untuk Minggu Ini</p>
-          </div>
-        </div>
-        <div class="p-4" style="background:#0d0d1a">
-          <div class="space-y-3">
-            ${actions.map((a, n) => `
-              <div class="flex items-start gap-3">
-                <span class="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold cinzel" style="background:rgba(78,205,196,0.12);color:#4ECDC4;border:1px solid rgba(78,205,196,0.35);margin-top:1px">${n+1}</span>
-                <p class="text-sm leading-relaxed" style="color:#F0E9D6">${a}</p>
-              </div>`).join('')}
-          </div>
-        </div>`;
       content.appendChild(div);
     }
+
+    // Update text in-place — no DOM rebuild, no flicker
+    const textEl = document.getElementById(textId);
+    if (textEl) textEl.textContent = part.trim();
   });
 }
 </script>
